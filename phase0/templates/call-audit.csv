@@ -1,0 +1,2 @@
+business_id,call_id,occurred_at_local,business_hours,ring_seconds,provider_disposition,classification,classification_source,classification_confidence_0_1,owner_callback,owner_callback_delay_minutes,current_outcome,booking_value,revenue_confidence_0_1,eligible_for_recovery,exclusion_reason,language,notes
+pilot-001,example-001,2026-07-01T10:30:00+05:30,true,18,no_answer,new_lead,owner_confirmed,0.8,false,,not_contacted,,0.0,true,,ta-IN,example row; replace or delete
