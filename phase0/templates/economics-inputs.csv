@@ -1,0 +1,4 @@
+scenario,monthly_eligible_missed_leads,engagement_rate,qualification_rate,owner_follow_through_rate,booking_rate,job_completion_rate,gross_profit_per_job,attribution_factor,variable_cost_per_attempt,monthly_support_cost,monthly_price
+low,20,0.30,0.60,0.50,0.30,0.80,1000,0.50,20,1000,2499
+base,30,0.45,0.75,0.70,0.40,0.85,1500,0.70,15,700,3499
+high,45,0.60,0.85,0.85,0.50,0.90,2000,0.85,12,500,4999

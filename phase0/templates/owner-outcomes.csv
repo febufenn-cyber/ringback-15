@@ -1,0 +1,2 @@
+business_id,call_id,attempt_id,owner_acknowledged,owner_contacted,owner_response_minutes,lead_quality,booked,job_completed,attributed_revenue,attribution_factor_0_1,estimated_gross_margin_0_1,lost_reason,notes
+pilot-001,example-001,attempt-001,true,true,4,good,true,true,2500,0.7,0.45,,example row; replace or delete

@@ -1,0 +1,2 @@
+business_id,call_id,attempt_id,attempted_at_local,experiment_arm,delay_minutes,channel,delivered,answered_or_replied,consented_to_continue,qualification_completed,lead_card_sent,opted_out,complaint,caller_confused,duplicate_contact,escalated,estimated_variable_cost,notes
+pilot-001,example-001,attempt-001,2026-07-01T10:32:00+05:30,human_callback,2,voice,true,true,true,true,true,false,false,false,false,false,0.00,example row; replace or delete

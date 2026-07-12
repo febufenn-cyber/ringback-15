@@ -1,0 +1,25 @@
+{
+  "business_id": "pilot-001",
+  "business_name": "Example Appliance Repair",
+  "vertical": "appliance_repair",
+  "region": "Madurai, Tamil Nadu",
+  "timezone": "Asia/Kolkata",
+  "primary_language": "ta-IN",
+  "secondary_languages": ["en-IN"],
+  "business_hours": {
+    "monday_saturday": "09:00-19:00",
+    "sunday": "closed"
+  },
+  "approved_services": ["air_conditioner", "refrigerator", "washing_machine"],
+  "excluded_calls": ["electrical_emergency", "refund_dispute", "warranty_legal_claim"],
+  "service_areas": ["Madurai"],
+  "qualification_fields": ["service_type", "location", "urgency", "preferred_time"],
+  "forbidden_promises": ["fixed_price", "arrival_guarantee", "diagnosis"],
+  "owner_response_sla_minutes": 10,
+  "callback_delay_seconds": 120,
+  "max_recovery_attempts": 1,
+  "fallback_channel": "whatsapp",
+  "recording_enabled": false,
+  "raw_data_delete_after_days": 30,
+  "kill_switch_contact": "+91-REDACTED"
+}
