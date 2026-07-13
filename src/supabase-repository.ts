@@ -131,17 +131,18 @@ export class SupabaseRepository implements Repository {
   }
 
   async createJobIfAbsent(job: CallbackJob): Promise<{ job: CallbackJob; created: boolean }> {
+    if (job.businessId !== this.businessId) {
+      throw new Error("Cannot insert a callback job for another business");
+    }
     const rows = await this.request<JobRow[]>(
       "/callback_jobs?on_conflict=source_call_sid",
       { method: "POST", body: JSON.stringify(jobToRow(job)) },
       "resolution=ignore-duplicates,return=representation",
     );
-    if (rows[0]) {
-      return { job: rowToJob(rows[0]), created: true };
-    }
+    if (rows[0]) return { job: rowToJob(rows[0]), created: true };
     const existing = await this.getJobBySourceCall(job.sourceCallSid);
     if (!existing) {
-      throw new Error("Callback job insert was ignored but no existing row was found");
+      throw new Error("Callback job insert was ignored but no scoped existing row was found");
     }
     return { job: existing, created: false };
   }
@@ -156,7 +157,8 @@ export class SupabaseRepository implements Repository {
 
   private async getSingleJob(filter: string): Promise<CallbackJob | null> {
     const rows = await this.request<JobRow[]>(
-      `/callback_jobs?select=*&${filter}&limit=1`,
+      `/callback_jobs?select=*&business_id=eq.${encodeURIComponent(this.businessId)}` +
+        `&${filter}&limit=1`,
       { method: "GET" },
     );
     return rows[0] ? rowToJob(rows[0]) : null;
@@ -167,21 +169,32 @@ export class SupabaseRepository implements Repository {
       "/rpc/claim_due_callback_jobs",
       {
         method: "POST",
-        body: JSON.stringify({ p_now: nowIso, p_limit: limit }),
+        body: JSON.stringify({
+          p_business_id: this.businessId,
+          p_now: nowIso,
+          p_limit: limit,
+        }),
       },
     );
     return rows.map(rowToJob);
   }
 
   async saveJob(job: CallbackJob): Promise<void> {
+    if (job.businessId !== this.businessId) {
+      throw new Error("Cannot save a callback job for another business");
+    }
     await this.request<JobRow[]>(
-      `/callback_jobs?id=eq.${encodeURIComponent(job.id)}`,
+      `/callback_jobs?id=eq.${encodeURIComponent(job.id)}` +
+        `&business_id=eq.${encodeURIComponent(this.businessId)}`,
       { method: "PATCH", body: JSON.stringify(jobToRow(job)) },
       "return=minimal",
     );
   }
 
   async recordManualCallback(callback: ManualCallback): Promise<void> {
+    if (callback.businessId !== this.businessId) {
+      throw new Error("Cannot record a manual callback for another business");
+    }
     await this.request<unknown>(
       "/manual_callbacks",
       {
@@ -203,8 +216,9 @@ export class SupabaseRepository implements Repository {
     callerNumber: string,
     sinceIso: string,
   ): Promise<boolean> {
+    if (businessId !== this.businessId) return false;
     const rows = await this.request<Array<{ id: string }>>(
-      `/manual_callbacks?select=id&business_id=eq.${encodeURIComponent(businessId)}` +
+      `/manual_callbacks?select=id&business_id=eq.${encodeURIComponent(this.businessId)}` +
         `&caller_number=eq.${encodeURIComponent(callerNumber)}` +
         `&occurred_at=gte.${encodeURIComponent(sinceIso)}&limit=1`,
       { method: "GET" },
@@ -245,13 +259,17 @@ export class SupabaseRepository implements Repository {
 
   async getLeadByCallbackJob(callbackJobId: string): Promise<LeadCard | null> {
     const rows = await this.request<Record<string, unknown>[]>(
-      `/lead_cards?select=*&callback_job_id=eq.${encodeURIComponent(callbackJobId)}&limit=1`,
+      `/lead_cards?select=*&business_id=eq.${encodeURIComponent(this.businessId)}` +
+        `&callback_job_id=eq.${encodeURIComponent(callbackJobId)}&limit=1`,
       { method: "GET" },
     );
     return rows[0] ? this.leadFromRow(rows[0]) : null;
   }
 
   async createLeadIfAbsent(lead: LeadCard): Promise<LeadCard> {
+    if (lead.businessId !== this.businessId) {
+      throw new Error("Cannot insert a lead for another business");
+    }
     const rows = await this.request<Record<string, unknown>[]>(
       "/lead_cards?on_conflict=callback_job_id",
       { method: "POST", body: JSON.stringify(this.leadToRow(lead)) },
@@ -259,13 +277,17 @@ export class SupabaseRepository implements Repository {
     );
     if (rows[0]) return this.leadFromRow(rows[0]);
     const existing = await this.getLeadByCallbackJob(lead.callbackJobId);
-    if (!existing) throw new Error("Lead insert was ignored but no existing lead was found");
+    if (!existing) throw new Error("Lead insert was ignored but no scoped lead was found");
     return existing;
   }
 
   async saveLead(lead: LeadCard): Promise<void> {
+    if (lead.businessId !== this.businessId) {
+      throw new Error("Cannot save a lead for another business");
+    }
     await this.request<unknown>(
-      `/lead_cards?callback_job_id=eq.${encodeURIComponent(lead.callbackJobId)}`,
+      `/lead_cards?callback_job_id=eq.${encodeURIComponent(lead.callbackJobId)}` +
+        `&business_id=eq.${encodeURIComponent(this.businessId)}`,
       { method: "PATCH", body: JSON.stringify(this.leadToRow(lead)) },
       "return=minimal",
     );

@@ -15,6 +15,11 @@ export function evaluateMissedCall(
   if (!business.active) {
     return { eligible: false, reason: "business_inactive" };
   }
+
+  const pilotMode = business.pilotMode ?? "live";
+  if (pilotMode !== "allowlist_only" && pilotMode !== "live") {
+    return { eligible: false, reason: "pilot_mode_blocked" };
+  }
   if (event.direction !== "inbound") {
     return { eligible: false, reason: "not_inbound" };
   }
@@ -39,6 +44,9 @@ export function evaluateMissedCall(
   }
   if (business.blockedCallers.has(caller)) {
     return { eligible: false, reason: "blocked_caller" };
+  }
+  if (pilotMode === "allowlist_only" && !(business.allowedCallers ?? new Set()).has(caller)) {
+    return { eligible: false, reason: "caller_not_allowlisted" };
   }
 
   return { eligible: true, reason: "eligible" };
