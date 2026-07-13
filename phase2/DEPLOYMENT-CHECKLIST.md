@@ -1,0 +1,23 @@
+# Phase 2 Deployment Checklist
+
+- [ ] Phase 0 permits live contact.
+- [ ] Phase 1 migration is applied.
+- [ ] `002_phase2_closed_pilot.sql` is applied to a dedicated Supabase project.
+- [ ] Business roster is created in `setup`.
+- [ ] Every inbound and callback number is owned or verified.
+- [ ] Callback numbers are not currently spam-labelled.
+- [ ] Owner notification numbers are confirmed directly.
+- [ ] `FEEDBACK_SIGNING_SECRET` contains at least 32 random characters.
+- [ ] `INTERNAL_SECRET` is rotated and stored outside source control.
+- [ ] `PILOT_GLOBAL_ACTIVE=false` during deployment and replay.
+- [ ] Business-scoped repository queries are replay-tested.
+- [ ] Concurrent quota reservation cannot exceed the daily limit.
+- [ ] Concurrent due-job claims create one call per job.
+- [ ] Feedback tokens reject tampering, cross-business substitution, and expiry.
+- [ ] Allowlist mode blocks unapproved callers.
+- [ ] Global pause and per-business pause are tested.
+- [ ] Incident recording and summary routes work.
+- [ ] Twilio spend caps and alerts are active.
+- [ ] Retention and deletion procedures are documented.
+- [ ] Regional legal and telecom review is complete.
+- [ ] First live window has a named operator and reversal authority.

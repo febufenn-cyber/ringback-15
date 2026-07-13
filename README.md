@@ -1,25 +1,37 @@
 # Ringback
 
-> when a business misses a call, AI instantly calls the person back, captures their need, and texts the owner a lead card.
-
-**Alternative to the product-shape pioneered by Sameday (YC ~W22)** — rank #15 of 500 in the [YC-500 Fable 5 Venture Blueprint](https://github.com/) (score 7.1/10).
-
-## Why this exists
-
-Trades miss most calls; AI answering has direct revenue impact. The buildable wedge: missed-call rescue add-on rather than a full answering workforce.
+> When a business misses a call, Ringback safely calls the person back, captures their need, and sends the owner a measurable lead.
 
 ## Current phase
 
-Ringback now contains the **Phase 1 one-business reliable technical loop**. It provides duplicate-safe missed-call ingestion, a waiting window, manual-callback suppression, atomic job dispatch, Twilio callback orchestration, deterministic qualification, Supabase persistence, and owner lead-card SMS.
+Ringback now contains the **Phase 2 closed multi-business pilot layer**.
 
-Start with [`phase1/README.md`](phase1/README.md). The Phase 0 evidence package remains in [`phase0/README.md`](phase0/README.md).
+The code supports a small operator-managed roster of businesses with:
 
-The implementation is intentionally inactive by default. Set `BUSINESS_ACTIVE=true` only after the Phase 0 live-contact, trust, and regional compliance gates are satisfied.
+- database-backed business and phone-line configuration;
+- strict business-scoped job and lead access;
+- `setup`, `allowlist_only`, `live`, `paused`, and `completed` pilot modes;
+- a global emergency stop and per-business kill switches;
+- per-business daily callback limits;
+- allowlisted supervised testing;
+- signed owner outcome links;
+- owner feedback and optional recovered-revenue capture;
+- pilot incidents and a compact operational summary.
+
+Start with [`phase2/README.md`](phase2/README.md). Phase 1 reliability documentation remains in [`phase1/README.md`](phase1/README.md), and the original validation system remains in [`phase0/README.md`](phase0/README.md).
+
+The system remains inactive by default:
+
+```env
+PILOT_GLOBAL_ACTIVE=false
+```
+
+## Local validation
 
 ```bash
 npm install
 npm test
-npm run build
+npm run typecheck
 ```
 
 Phase 0 reporting remains available:
@@ -29,48 +41,53 @@ python3 scripts/phase0_report.py --data-dir phase0/templates --output phase0-rep
 python3 -m unittest discover -s tests -v
 ```
 
-## MVP scope
+## MVP status
 
-- [x] duplicate-safe missed-call detection core
+- [x] duplicate-safe missed-call detection
 - [x] delayed callback orchestration with manual suppression
 - [x] deterministic service, location, and urgency capture
-- [x] owner lead-card SMS adapter
-- [x] Supabase call, job, history, suppression, and lead log
-- [ ] supervised live pilot completion
-- [ ] owner outcome feedback loop
-- [ ] multi-business onboarding and tenant isolation
+- [x] Supabase persistence and audit history
+- [x] closed multi-business pilot roster
+- [x] allowlist and live pilot modes
+- [x] per-business callback quota
+- [x] signed owner outcome feedback
+- [x] pilot incident and summary controls
+- [ ] supervised pilot completion
+- [ ] verified caller trust and carrier performance
+- [ ] multi-tenant self-service authentication
+- [ ] billing and production CRM integrations
 
 ## Architecture
 
-`Cloudflare Workers + Supabase + Twilio` — a standard Worker fetch handler, Supabase Postgres with RLS and atomic claim RPC, Twilio signed webhooks, outbound calls, speech gathering, and SMS.
+```text
+Twilio signed events
+        ↓
+Cloudflare Worker
+        ↓
+Supabase pilot directory resolves the business
+        ↓
+Business-scoped callback repository and coordinator
+        ↓
+Atomic claim + atomic daily quota reservation
+        ↓
+Deterministic callback qualification
+        ↓
+Lead SMS with signed owner outcome link
+        ↓
+Owner feedback + pilot summary + incident log
+```
 
-Phase 1 deliberately postpones free-form LLM voice reasoning, Deepgram, ElevenLabs, billing, multi-tenancy, and a full CRM until the reliable core loop survives supervised real traffic.
-
-**Integrations:** Twilio Voice/SMS; Supabase  
-**Data:** signed call events; callback jobs; state history; manual-callback suppressions; lead cards  
-**Agent core:** deterministic orchestration first; bounded AI reasoning later.
-
-## Business
-
-| | |
-|---|---|
-| Monetization | $29-79/mo per line |
-| First customer | Small trades and local service SMBs |
-| GTM wedge | Local business groups; 'recover every missed call' hook; SEO. |
-| Competition risk | Med: missed-call text-back exists |
-| Regulatory/trust risk | Region-specific and must be validated before activation |
-| India angle | Missed-call culture is huge; regional-language callback; UPI booking. |
-| Difficulty / build time | Reliability core implemented; live validation remains |
+Phase 2 deliberately postpones public signup, billing, autonomous free-form voice reasoning, recording, calendar booking, and a full CRM.
 
 ## Phased plan
 
 - **Phase 0:** prove problem frequency, caller behaviour, owner action, economics, and trust.
-- **Phase 1:** one-business reliable technical loop — implemented, pending supervised pilot.
-- **Phase 2:** closed pilot across a few businesses.
-- **Phase 3:** multi-tenant productization.
+- **Phase 1:** implement the one-business reliable technical loop.
+- **Phase 2:** operate a controlled closed multi-business pilot — implementation complete, live evidence pending.
+- **Phase 3:** production multi-tenancy, self-service onboarding, authentication, billing, and operational tooling.
 - **Phase 4:** vertical intelligence and booking integrations.
 - **Phase 5:** revenue attribution and scalable distribution.
 
 ---
 
-*Built with Fable 5 (Claude Code). Blueprint row: inspired by Sameday — "AI phone workforce answering calls for home-service trades."*
+*Blueprint inspired by the missed-call recovery wedge for local service businesses.*

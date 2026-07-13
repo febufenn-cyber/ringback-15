@@ -13,6 +13,8 @@ export type CallStatus =
 
 export type CallDirection = "inbound" | "outbound-api" | "outbound-dial" | "unknown";
 
+export type PilotMode = "setup" | "allowlist_only" | "live" | "paused" | "completed";
+
 export interface BusinessConfig {
   id: string;
   name: string;
@@ -25,6 +27,28 @@ export interface BusinessConfig {
   maxCallbackAttempts: number;
   active: boolean;
   blockedCallers: ReadonlySet<string>;
+  pilotMode?: PilotMode;
+  allowedCallers?: ReadonlySet<string>;
+  dailyCallbackLimit?: number;
+  feedbackTtlHours?: number;
+  timezone?: string;
+}
+
+export interface PilotBusinessInput {
+  id: string;
+  name: string;
+  inboundNumber: string;
+  callbackNumber: string;
+  ownerNumber: string;
+  pilotMode: PilotMode;
+  callbackDelaySeconds: number;
+  callerCooldownMinutes: number;
+  maxCallbackAttempts: number;
+  dailyCallbackLimit: number;
+  timezone: string;
+  feedbackTtlHours: number;
+  blockedCallers: string[];
+  allowedCallers: string[];
 }
 
 export interface CallProgressEvent {
@@ -96,6 +120,52 @@ export interface LeadCard {
   ownerNotificationSid?: string;
 }
 
+export type OwnerFeedbackOutcome =
+  | "acknowledged"
+  | "contacted"
+  | "booked"
+  | "won"
+  | "lost"
+  | "not_lead"
+  | "unreachable";
+
+export interface OwnerFeedback {
+  leadCardId: string;
+  businessId: string;
+  outcome: OwnerFeedbackOutcome;
+  submittedAt: string;
+  revenueAmount?: number;
+  notes?: string;
+}
+
+export type PilotIncidentSeverity = "info" | "warning" | "critical";
+export type PilotIncidentStatus = "open" | "resolved";
+
+export interface PilotIncident {
+  id: string;
+  businessId: string;
+  severity: PilotIncidentSeverity;
+  category: string;
+  description: string;
+  status: PilotIncidentStatus;
+  occurredAt: string;
+  resolvedAt?: string;
+}
+
+export interface PilotBusinessSummary {
+  businessId: string;
+  businessName: string;
+  pilotMode: PilotMode;
+  dailyCallbackLimit: number;
+  callbacksToday: number;
+  totalJobs: number;
+  notifiedLeads: number;
+  ownerFeedbackCount: number;
+  bookedCount: number;
+  wonCount: number;
+  openIncidentCount: number;
+}
+
 export interface StartCallbackRequest {
   to: string;
   from: string;
@@ -145,11 +215,39 @@ export interface Repository {
   saveLead(lead: LeadCard): Promise<void>;
 }
 
+export interface BusinessDirectory {
+  getBusinessById(id: string): Promise<BusinessConfig | null>;
+  getBusinessByInboundNumber(inboundNumber: string): Promise<BusinessConfig | null>;
+  getBusinessForJob(jobId: string): Promise<BusinessConfig | null>;
+  listBusinesses(): Promise<BusinessConfig[]>;
+  listDispatchableBusinesses(): Promise<BusinessConfig[]>;
+  upsertBusiness(input: PilotBusinessInput): Promise<BusinessConfig>;
+  setPilotMode(businessId: string, mode: PilotMode): Promise<BusinessConfig>;
+}
+
+export interface PilotControl {
+  reserveCallbackSlot(
+    businessId: string,
+    usageDate: string,
+    dailyLimit: number,
+  ): Promise<boolean>;
+  getLeadById(businessId: string, leadId: string): Promise<LeadCard | null>;
+  recordOwnerFeedback(feedback: OwnerFeedback): Promise<OwnerFeedback>;
+  recordIncident(incident: PilotIncident): Promise<void>;
+  getPilotSummary(): Promise<PilotBusinessSummary[]>;
+}
+
+export interface FeedbackLinkFactory {
+  createLink(business: BusinessConfig, lead: LeadCard, now: Date): Promise<string>;
+}
+
 export interface EligibilityDecision {
   eligible: boolean;
   reason:
     | "eligible"
     | "business_inactive"
+    | "pilot_mode_blocked"
+    | "caller_not_allowlisted"
     | "not_inbound"
     | "not_missed_terminal"
     | "invalid_caller"

@@ -6,9 +6,12 @@ import type {
   CallProgressEvent,
   Clock,
   DispatchResult,
+  FeedbackLinkFactory,
   InboundHandlingResult,
   LeadCard,
   ManualCallback,
+  PilotControl,
+  PilotIncident,
   QualificationField,
   Repository,
   TelephonyGateway,
@@ -36,15 +39,25 @@ function cooldownStart(now: Date, minutes: number): string {
   return new Date(now.getTime() - minutes * 60_000).toISOString();
 }
 
-function buildLeadMessage(business: BusinessConfig, lead: LeadCard): string {
-  return [
-    `NEW RINGBACK LEAD — ${business.name}`,
+function usageDateUtc(now: Date): string {
+  return now.toISOString().slice(0, 10);
+}
+
+function buildLeadMessage(
+  business: BusinessConfig,
+  lead: LeadCard,
+  feedbackLink?: string,
+): string {
+  const lines = [
+    `RINGBACK LEAD — ${business.name}`,
     `Caller: ${lead.callerNumber}`,
     `Need: ${lead.serviceNeed}`,
-    `Location: ${lead.location}`,
+    `Area: ${lead.location}`,
     `Urgency: ${lead.urgency}`,
-    "Reply or call the customer promptly. No price or booking was promised.",
-  ].join("\n");
+  ];
+  if (feedbackLink) lines.push(`Update outcome: ${feedbackLink}`);
+  lines.push("No price or booking was promised.");
+  return lines.join("\n");
 }
 
 export class RingbackCoordinator {
@@ -53,7 +66,30 @@ export class RingbackCoordinator {
     private readonly telephony: TelephonyGateway,
     private readonly business: BusinessConfig,
     private readonly clock: Clock = new SystemClock(),
+    private readonly pilotControl?: PilotControl,
+    private readonly feedbackLinks?: FeedbackLinkFactory,
   ) {}
+
+  private async recordIncident(
+    severity: PilotIncident["severity"],
+    category: string,
+    description: string,
+  ): Promise<void> {
+    if (!this.pilotControl) return;
+    try {
+      await this.pilotControl.recordIncident({
+        id: newId("inc"),
+        businessId: this.business.id,
+        severity,
+        category: cleanAnswer(category).slice(0, 80),
+        description: cleanAnswer(description).slice(0, 500),
+        status: "open",
+        occurredAt: this.clock.now().toISOString(),
+      });
+    } catch {
+      // Pilot incident recording must never create another customer contact.
+    }
+  }
 
   async handleInboundEvent(event: CallProgressEvent): Promise<InboundHandlingResult> {
     const inserted = await this.repository.recordCallEvent(event);
@@ -77,13 +113,13 @@ export class RingbackCoordinator {
     }
 
     const callerNumber = normalizePhoneNumber(event.from);
-    if (!callerNumber) {
-      throw new Error("Eligibility policy returned an invalid caller");
-    }
+    if (!callerNumber) throw new Error("Eligibility policy returned an invalid caller");
 
     const now = this.clock.now();
     const nowIso = now.toISOString();
-    const scheduledAt = new Date(now.getTime() + this.business.callbackDelaySeconds * 1_000).toISOString();
+    const scheduledAt = new Date(
+      now.getTime() + this.business.callbackDelaySeconds * 1_000,
+    ).toISOString();
     const job: CallbackJob = {
       id: newId("cbj"),
       businessId: this.business.id,
@@ -114,9 +150,7 @@ export class RingbackCoordinator {
     source: ManualCallback["source"] = "owner",
   ): Promise<ManualCallback> {
     const callerNumber = normalizePhoneNumber(callerInput);
-    if (!callerNumber) {
-      throw new Error("Manual callback requires a valid E.164 caller number");
-    }
+    if (!callerNumber) throw new Error("Manual callback requires a valid E.164 caller number");
     const callback: ManualCallback = {
       id: newId("mcb"),
       businessId: this.business.id,
@@ -158,6 +192,32 @@ export class RingbackCoordinator {
         continue;
       }
 
+      const dailyLimit = this.business.dailyCallbackLimit ?? 50;
+      if (
+        this.pilotControl &&
+        !(await this.pilotControl.reserveCallbackSlot(
+          this.business.id,
+          usageDateUtc(now),
+          dailyLimit,
+        ))
+      ) {
+        const suppressed = transitionJob(job, "suppressed", nowIso, {
+          failureReason: "daily_callback_limit_reached",
+        });
+        await this.repository.saveJob(suppressed);
+        await this.recordIncident(
+          "warning",
+          "daily_quota",
+          `Daily callback limit ${dailyLimit} blocked job ${job.id}`,
+        );
+        results.push({
+          jobId: job.id,
+          outcome: "suppressed",
+          detail: "daily_callback_limit_reached",
+        });
+        continue;
+      }
+
       try {
         const started = await this.telephony.startCallback({
           to: job.callerNumber,
@@ -187,6 +247,7 @@ export class RingbackCoordinator {
         const detail = safeError(error);
         const failed = transitionJob(job, "failed", nowIso, { failureReason: detail });
         await this.repository.saveJob(failed);
+        await this.recordIncident("warning", "callback_start_failed", `${job.id}: ${detail}`);
         results.push({ jobId: job.id, outcome: "failed", detail });
       }
     }
@@ -202,15 +263,14 @@ export class RingbackCoordinator {
       ? await this.repository.getJobById(jobId)
       : await this.repository.getJobByOutboundCall(outboundCallSid);
     if (!job) return null;
+    if (job.businessId !== this.business.id) {
+      throw new Error("Callback job does not belong to the resolved business");
+    }
     if (job.outboundCallSid && job.outboundCallSid !== outboundCallSid) {
       throw new Error("Outbound CallSid does not match the callback job");
     }
     if (!job.outboundCallSid) {
-      job = {
-        ...job,
-        outboundCallSid,
-        updatedAt: this.clock.now().toISOString(),
-      };
+      job = { ...job, outboundCallSid, updatedAt: this.clock.now().toISOString() };
       await this.repository.saveJob(job);
     }
     return job;
@@ -218,17 +278,11 @@ export class RingbackCoordinator {
 
   async handleOutboundEvent(event: CallProgressEvent, jobId?: string): Promise<string> {
     const inserted = await this.repository.recordCallEvent(event);
-    if (!inserted) {
-      return "duplicate_provider_event";
-    }
+    if (!inserted) return "duplicate_provider_event";
 
     const job = await this.resolveOutboundJob(event.providerCallSid, jobId);
-    if (!job) {
-      return "unknown_outbound_call";
-    }
-    if (event.sequenceNumber <= job.lastProviderSequence) {
-      return "stale_provider_event";
-    }
+    if (!job) return "unknown_outbound_call";
+    if (event.sequenceNumber <= job.lastProviderSequence) return "stale_provider_event";
 
     let target = job.state;
     let failureReason = job.failureReason;
@@ -267,29 +321,24 @@ export class RingbackCoordinator {
     }
 
     if (!canTransition(job.state, target)) {
-      const sequenceOnly: CallbackJob = {
+      await this.repository.saveJob({
         ...job,
         lastProviderSequence: event.sequenceNumber,
         updatedAt: this.clock.now().toISOString(),
-      };
-      await this.repository.saveJob(sequenceOnly);
+      });
       return "non_monotonic_state_ignored";
     }
 
-    const transitionPatch: Partial<CallbackJob> = {
-      lastProviderSequence: event.sequenceNumber,
-    };
-    if (failureReason) transitionPatch.failureReason = failureReason;
-    const updated = transitionJob(job, target, this.clock.now().toISOString(), transitionPatch);
+    const patch: Partial<CallbackJob> = { lastProviderSequence: event.sequenceNumber };
+    if (failureReason) patch.failureReason = failureReason;
+    const updated = transitionJob(job, target, this.clock.now().toISOString(), patch);
     await this.repository.saveJob(updated);
     return `state_${updated.state}`;
   }
 
   async beginQualification(outboundCallSid: string, jobId?: string): Promise<CallbackJob> {
     let job = await this.resolveOutboundJob(outboundCallSid, jobId);
-    if (!job) {
-      throw new Error("No callback job exists for this outbound call");
-    }
+    if (!job) throw new Error("No callback job exists for this outbound call");
     const nowIso = this.clock.now().toISOString();
 
     if (job.state === "dispatching") {
@@ -316,7 +365,7 @@ export class RingbackCoordinator {
     }
     return {
       id: newId("lead"),
-      businessId: this.business.id,
+      businessId: job.businessId,
       callbackJobId: job.id,
       callerNumber: job.callerNumber,
       serviceNeed: job.serviceNeed,
@@ -324,6 +373,20 @@ export class RingbackCoordinator {
       urgency: job.urgency,
       createdAt: nowIso,
     };
+  }
+
+  private async feedbackLink(lead: LeadCard): Promise<string | undefined> {
+    if (!this.feedbackLinks) return undefined;
+    try {
+      return await this.feedbackLinks.createLink(this.business, lead, this.clock.now());
+    } catch (error) {
+      await this.recordIncident(
+        "warning",
+        "feedback_link_failed",
+        `${lead.id}: ${safeError(error)}`,
+      );
+      return undefined;
+    }
   }
 
   private async notifyLead(job: CallbackJob, lead: LeadCard): Promise<CallbackJob> {
@@ -334,10 +397,11 @@ export class RingbackCoordinator {
     }
 
     try {
+      const feedbackLink = await this.feedbackLink(lead);
       const notification = await this.telephony.sendLeadMessage({
         to: this.business.ownerNumber,
         from: this.business.callbackNumber,
-        body: buildLeadMessage(this.business, lead),
+        body: buildLeadMessage(this.business, lead, feedbackLink),
       });
       const notifiedLead: LeadCard = {
         ...lead,
@@ -348,10 +412,16 @@ export class RingbackCoordinator {
       await this.repository.saveJob(notified);
       return notified;
     } catch (error) {
+      const detail = safeError(error);
       const recoverable = transitionJob(job, "lead_ready", this.clock.now().toISOString(), {
-        failureReason: `owner_notification_failed:${safeError(error)}`.slice(0, 300),
+        failureReason: `owner_notification_failed:${detail}`.slice(0, 300),
       });
       await this.repository.saveJob(recoverable);
+      await this.recordIncident(
+        "warning",
+        "owner_notification_failed",
+        `${lead.id}: ${detail}`,
+      );
       throw error;
     }
   }
@@ -363,36 +433,25 @@ export class RingbackCoordinator {
     jobId?: string,
   ): Promise<CallbackJob> {
     let job = await this.beginQualification(outboundCallSid, jobId);
-    if (job.state === "notified") {
-      return job;
-    }
+    if (job.state === "notified") return job;
     if (job.state === "lead_ready") {
       const existingLead =
         (await this.repository.getLeadByCallbackJob(job.id)) ??
-        (await this.repository.createLeadIfAbsent(this.leadFromJob(job, this.clock.now().toISOString())));
+        (await this.repository.createLeadIfAbsent(
+          this.leadFromJob(job, this.clock.now().toISOString()),
+        ));
       return this.notifyLead(job, existingLead);
     }
 
     const value = cleanAnswer(rawValue);
-    if (!value) {
-      throw new Error(`Qualification field ${field} is empty`);
-    }
-
-    if (job[field]) {
-      return job;
-    }
+    if (!value) throw new Error(`Qualification field ${field} is empty`);
+    if (job[field]) return job;
 
     const nowIso = this.clock.now().toISOString();
-    job = {
-      ...job,
-      [field]: value,
-      updatedAt: nowIso,
-    };
+    job = { ...job, [field]: value, updatedAt: nowIso };
     await this.repository.saveJob(job);
 
-    if (!job.serviceNeed || !job.location || !job.urgency) {
-      return job;
-    }
+    if (!job.serviceNeed || !job.location || !job.urgency) return job;
 
     job = transitionJob(job, "lead_ready", nowIso);
     await this.repository.saveJob(job);

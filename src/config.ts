@@ -1,23 +1,20 @@
-import { normalizePhoneNumber } from "./policy.js";
-import type { BusinessConfig } from "./types.js";
-
 export interface Env {
-  BUSINESS_ID: string;
-  BUSINESS_NAME: string;
-  BUSINESS_PHONE_E164: string;
-  CALLBACK_FROM_E164: string;
-  OWNER_MOBILE_E164: string;
   PUBLIC_BASE_URL: string;
-  CALLBACK_DELAY_SECONDS?: string;
-  CALLER_COOLDOWN_MINUTES?: string;
-  MAX_CALLBACK_ATTEMPTS?: string;
-  BUSINESS_ACTIVE?: string;
-  BLOCKED_CALLERS?: string;
+  PILOT_GLOBAL_ACTIVE?: string;
+  FEEDBACK_SIGNING_SECRET: string;
+  DEFAULT_FEEDBACK_TTL_HOURS?: string;
   TWILIO_ACCOUNT_SID: string;
   TWILIO_AUTH_TOKEN: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   INTERNAL_SECRET: string;
+}
+
+export interface GlobalConfig {
+  publicBaseUrl: string;
+  pilotGlobalActive: boolean;
+  feedbackSigningSecret: string;
+  defaultFeedbackTtlHours: number;
 }
 
 function required(value: string | undefined, name: string): string {
@@ -42,58 +39,28 @@ function boundedInteger(
   return parsed;
 }
 
-function requiredPhone(value: string | undefined, name: string): string {
-  const normalized = normalizePhoneNumber(required(value, name));
-  if (!normalized) {
-    throw new Error(`${name} must be a valid E.164 number`);
-  }
-  return normalized;
-}
-
-export function loadBusinessConfig(env: Env): BusinessConfig {
+export function loadGlobalConfig(env: Env): GlobalConfig {
   const publicBaseUrl = required(env.PUBLIC_BASE_URL, "PUBLIC_BASE_URL").replace(/\/$/, "");
   const parsedUrl = new URL(publicBaseUrl);
   if (parsedUrl.protocol !== "https:" && parsedUrl.hostname !== "localhost") {
     throw new Error("PUBLIC_BASE_URL must use HTTPS outside localhost");
   }
 
-  const blockedCallers = new Set<string>();
-  for (const entry of (env.BLOCKED_CALLERS ?? "").split(",")) {
-    if (!entry.trim()) continue;
-    const normalized = normalizePhoneNumber(entry);
-    if (!normalized) throw new Error(`Invalid number in BLOCKED_CALLERS: ${entry}`);
-    blockedCallers.add(normalized);
+  const feedbackSigningSecret = required(env.FEEDBACK_SIGNING_SECRET, "FEEDBACK_SIGNING_SECRET");
+  if (feedbackSigningSecret.length < 32) {
+    throw new Error("FEEDBACK_SIGNING_SECRET must contain at least 32 characters");
   }
 
   return {
-    id: required(env.BUSINESS_ID, "BUSINESS_ID"),
-    name: required(env.BUSINESS_NAME, "BUSINESS_NAME"),
-    inboundNumber: requiredPhone(env.BUSINESS_PHONE_E164, "BUSINESS_PHONE_E164"),
-    callbackNumber: requiredPhone(env.CALLBACK_FROM_E164, "CALLBACK_FROM_E164"),
-    ownerNumber: requiredPhone(env.OWNER_MOBILE_E164, "OWNER_MOBILE_E164"),
     publicBaseUrl,
-    callbackDelaySeconds: boundedInteger(
-      env.CALLBACK_DELAY_SECONDS,
-      45,
-      10,
-      900,
-      "CALLBACK_DELAY_SECONDS",
-    ),
-    callerCooldownMinutes: boundedInteger(
-      env.CALLER_COOLDOWN_MINUTES,
-      1_440,
+    pilotGlobalActive: (env.PILOT_GLOBAL_ACTIVE ?? "false").trim().toLowerCase() === "true",
+    feedbackSigningSecret,
+    defaultFeedbackTtlHours: boundedInteger(
+      env.DEFAULT_FEEDBACK_TTL_HOURS,
+      168,
       1,
-      43_200,
-      "CALLER_COOLDOWN_MINUTES",
+      720,
+      "DEFAULT_FEEDBACK_TTL_HOURS",
     ),
-    maxCallbackAttempts: boundedInteger(
-      env.MAX_CALLBACK_ATTEMPTS,
-      1,
-      1,
-      3,
-      "MAX_CALLBACK_ATTEMPTS",
-    ),
-    active: (env.BUSINESS_ACTIVE ?? "false").trim().toLowerCase() === "true",
-    blockedCallers,
   };
 }
