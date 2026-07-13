@@ -1,0 +1,6 @@
+name = "ringback-15"
+main = "dist/main.js"
+compatibility_date = "2026-07-13"
+
+[triggers]
+crons = ["* * * * *"]
