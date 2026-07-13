@@ -10,34 +10,45 @@ Trades miss most calls; AI answering has direct revenue impact. The buildable we
 
 ## Current phase
 
-Ringback is in **Phase 0: evidence before automation**. The repository now contains a complete validation system for selecting a vertical, auditing real missed calls, running a controlled concierge recovery experiment, calculating conservative economics, and making a documented go/no-go decision.
+Ringback now contains the **Phase 1 one-business reliable technical loop**. It provides duplicate-safe missed-call ingestion, a waiting window, manual-callback suppression, atomic job dispatch, Twilio callback orchestration, deterministic qualification, Supabase persistence, and owner lead-card SMS.
 
-Start with [`phase0/README.md`](phase0/README.md).
+Start with [`phase1/README.md`](phase1/README.md). The Phase 0 evidence package remains in [`phase0/README.md`](phase0/README.md).
 
-Run the zero-dependency report generator after replacing the example CSV rows with pilot data:
+The implementation is intentionally inactive by default. Set `BUSINESS_ACTIVE=true` only after the Phase 0 live-contact, trust, and regional compliance gates are satisfied.
+
+```bash
+npm install
+npm test
+npm run build
+```
+
+Phase 0 reporting remains available:
 
 ```bash
 python3 scripts/phase0_report.py --data-dir phase0/templates --output phase0-report.md
 python3 -m unittest discover -s tests -v
 ```
 
-No production callback automation should be built until the hard gates in [`phase0/07-go-no-go-scorecard.md`](phase0/07-go-no-go-scorecard.md) are satisfied.
-
 ## MVP scope
 
-- [ ] Missed-call detection
-- [ ] instant AI callback
-- [ ] need capture
-- [ ] lead-card SMS
-- [ ] simple CRM log
+- [x] duplicate-safe missed-call detection core
+- [x] delayed callback orchestration with manual suppression
+- [x] deterministic service, location, and urgency capture
+- [x] owner lead-card SMS adapter
+- [x] Supabase call, job, history, suppression, and lead log
+- [ ] supervised live pilot completion
+- [ ] owner outcome feedback loop
+- [ ] multi-business onboarding and tenant isolation
 
 ## Architecture
 
-`Workers+Supabase+Claude; Twilio call events` — Cloudflare Workers + Hono API, Supabase (Postgres + RLS + Auth + pgvector), Claude API via Agent SDK (claude-fable-5 for agent reasoning, claude-haiku-4-5 for volume), wrangler deploys.
+`Cloudflare Workers + Supabase + Twilio` — a standard Worker fetch handler, Supabase Postgres with RLS and atomic claim RPC, Twilio signed webhooks, outbound calls, speech gathering, and SMS.
 
-**Integrations:** Twilio; Deepgram; ElevenLabs; WhatsApp/SMS; Sheets  
-**Data:** Missed-call events; callback transcripts; lead records  
-**Agent core:** Agent auto-recovers missed callers and qualifies them into leads.
+Phase 1 deliberately postpones free-form LLM voice reasoning, Deepgram, ElevenLabs, billing, multi-tenancy, and a full CRM until the reliable core loop survives supervised real traffic.
+
+**Integrations:** Twilio Voice/SMS; Supabase  
+**Data:** signed call events; callback jobs; state history; manual-callback suppressions; lead cards  
+**Agent core:** deterministic orchestration first; bounded AI reasoning later.
 
 ## Business
 
@@ -47,14 +58,14 @@ No production callback automation should be built until the hard gates in [`phas
 | First customer | Small trades and local service SMBs |
 | GTM wedge | Local business groups; 'recover every missed call' hook; SEO. |
 | Competition risk | Med: missed-call text-back exists |
-| Regulatory/trust risk | Low in the original seed; Phase 0 treats this as unproven and region-specific |
+| Regulatory/trust risk | Region-specific and must be validated before activation |
 | India angle | Missed-call culture is huge; regional-language callback; UPI booking. |
-| Difficulty / build time | Low / 2-3 weeks after validation |
+| Difficulty / build time | Reliability core implemented; live validation remains |
 
 ## Phased plan
 
 - **Phase 0:** prove problem frequency, caller behaviour, owner action, economics, and trust.
-- **Phase 1:** one-business reliable technical loop.
+- **Phase 1:** one-business reliable technical loop — implemented, pending supervised pilot.
 - **Phase 2:** closed pilot across a few businesses.
 - **Phase 3:** multi-tenant productization.
 - **Phase 4:** vertical intelligence and booking integrations.
