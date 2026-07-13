@@ -4,4 +4,6 @@ node_modules/
 .dev.vars
 dist/
 .wrangler/
+phase0-report.md
+*.log
 .DS_Store
