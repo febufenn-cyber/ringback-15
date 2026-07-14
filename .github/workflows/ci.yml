@@ -16,7 +16,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - run: npm install
+      - run: python3 -m unittest discover -s tests -v
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
