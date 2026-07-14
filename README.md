@@ -4,33 +4,18 @@
 
 ## Current phase
 
-Ringback now contains the **Phase 2 closed multi-business pilot layer**.
+Ringback now contains the **Phase 3 production multi-tenancy foundation**.
 
-The code supports a small operator-managed roster of businesses with:
+Implemented foundations include organizations, explicit memberships and roles, tenant-scoped locations and phone lines, safe onboarding transitions, plan entitlements, idempotent billing events, usage metering, audit events, and activation/suspension controls.
 
-- database-backed business and phone-line configuration;
-- strict business-scoped job and lead access;
-- `setup`, `allowlist_only`, `live`, `paused`, and `completed` pilot modes;
-- a global emergency stop and per-business kill switches;
-- per-business daily callback limits;
-- allowlisted supervised testing;
-- signed owner outcome links;
-- owner feedback and optional recovered-revenue capture;
-- pilot incidents and a compact operational summary.
+Start with [`phase3/README.md`](phase3/README.md). Earlier reliability and pilot documentation remains in [`phase2/README.md`](phase2/README.md), [`phase1/README.md`](phase1/README.md), and [`phase0/README.md`](phase0/README.md).
 
-Start with [`phase2/README.md`](phase2/README.md). Phase 1 reliability documentation remains in [`phase1/README.md`](phase1/README.md), and the original validation system remains in [`phase0/README.md`](phase0/README.md).
-
-The system remains inactive by default:
-
-```env
-PILOT_GLOBAL_ACTIVE=false
-```
+External providers remain disabled until configured and verified. Phase 2 live-calling safety defaults remain unchanged.
 
 ## Remaining implementation roadmap
 
-Three phases remain:
+Two phases remain after Phase 3:
 
-- **Phase 3:** production multi-tenancy, onboarding, authentication, billing and operational tooling;
 - **Phase 4:** versioned vertical intelligence and conflict-safe booking integrations;
 - **Phase 5:** revenue attribution, ROI evidence and scalable distribution.
 
@@ -38,11 +23,8 @@ The detailed plans and autonomous execution rules are stored in:
 
 - [`docs/REMAINING-PHASES-ROADMAP.md`](docs/REMAINING-PHASES-ROADMAP.md)
 - [`docs/AUTONOMOUS-BUILD-CONTRACT.md`](docs/AUTONOMOUS-BUILD-CONTRACT.md)
-- [`phase3/IMPLEMENTATION-PLAN.md`](phase3/IMPLEMENTATION-PLAN.md)
 - [`phase4/IMPLEMENTATION-PLAN.md`](phase4/IMPLEMENTATION-PLAN.md)
 - [`phase5/IMPLEMENTATION-PLAN.md`](phase5/IMPLEMENTATION-PLAN.md)
-
-Under the build contract, the command **`build`** means: implement every remaining incomplete phase in order, validate it, open a PR, squash-merge it into `main`, verify the remote merge commit and defining files, then continue to the next phase.
 
 ## Local validation
 
@@ -50,6 +32,7 @@ Under the build contract, the command **`build`** means: implement every remaini
 npm install
 npm test
 npm run typecheck
+npm run build
 ```
 
 Phase 0 reporting remains available:
@@ -59,50 +42,44 @@ python3 scripts/phase0_report.py --data-dir phase0/templates --output phase0-rep
 python3 -m unittest discover -s tests -v
 ```
 
-## MVP status
+## Product status
 
-- [x] duplicate-safe missed-call detection
-- [x] delayed callback orchestration with manual suppression
-- [x] deterministic service, location, and urgency capture
-- [x] Supabase persistence and audit history
-- [x] closed multi-business pilot roster
-- [x] allowlist and live pilot modes
-- [x] per-business callback quota
-- [x] signed owner outcome feedback
-- [x] pilot incident and summary controls
-- [ ] supervised pilot completion
-- [ ] verified caller trust and carrier performance
-- [ ] multi-tenant self-service authentication
-- [ ] billing and production CRM integrations
+- [x] duplicate-safe missed-call recovery core
+- [x] controlled closed multi-business pilot
+- [x] organizations and role-based authorization
+- [x] tenant-scoped locations and phone lines
+- [x] onboarding and activation state machines
+- [x] idempotent billing-event normalization
+- [x] subscriptions, entitlements, and usage metering
+- [x] commercial audit trail and suspension controls
+- [ ] supervised production-provider validation
+- [ ] vertical intelligence and booking
+- [ ] defensible attribution and scalable distribution
 
 ## Architecture
 
 ```text
-Twilio signed events
+Signed provider events
         ↓
-Cloudflare Worker
+Reliable callback and pilot engine
         ↓
-Supabase pilot directory resolves the business
+Organization + membership authorization
         ↓
-Business-scoped callback repository and coordinator
+Tenant-scoped locations and phone lines
         ↓
-Atomic claim + atomic daily quota reservation
+Onboarding + entitlement gates
         ↓
-Deterministic callback qualification
+Usage + billing event ledger
         ↓
-Lead SMS with signed owner outcome link
-        ↓
-Owner feedback + pilot summary + incident log
+Audit, suspension, and operational controls
 ```
-
-Phase 2 deliberately postpones public signup, billing, autonomous free-form voice reasoning, recording, calendar booking, and a full CRM.
 
 ## Phased plan
 
-- **Phase 0:** prove problem frequency, caller behaviour, owner action, economics, and trust.
-- **Phase 1:** implement the one-business reliable technical loop.
-- **Phase 2:** operate a controlled closed multi-business pilot — implementation complete, live evidence pending.
-- **Phase 3:** production multi-tenancy, self-service onboarding, authentication, billing, and operational tooling.
+- **Phase 0:** problem and economics validation — implemented.
+- **Phase 1:** reliable one-business callback loop — implemented.
+- **Phase 2:** controlled closed multi-business pilot — implemented; live evidence pending.
+- **Phase 3:** production multi-tenancy and commercial foundation — implemented; provider validation pending.
 - **Phase 4:** vertical intelligence and booking integrations.
 - **Phase 5:** revenue attribution and scalable distribution.
 
