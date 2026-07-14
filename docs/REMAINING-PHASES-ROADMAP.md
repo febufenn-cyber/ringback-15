@@ -1,80 +1,47 @@
-# Remaining Phases Roadmap
+# Implementation Roadmap
 
 ## Status
 
-Ringback has six numbered phases from Phase 0 through Phase 5.
+Ringback has six numbered phases from Phase 0 through Phase 5. All planned repository implementation phases are complete.
 
 | Phase | Purpose | Repository status |
 |---|---|---|
 | Phase 0 | Validate the problem, caller behavior, owner action, economics and trust | Implemented |
 | Phase 1 | Build one reliable callback loop | Implemented |
 | Phase 2 | Build a controlled closed multi-business pilot | Implemented; live evidence pending |
-| Phase 3 | Production multi-tenancy, onboarding, authentication, billing and operations | Planned |
-| Phase 4 | Vertical intelligence, bounded model assistance and booking | Planned |
-| Phase 5 | Revenue attribution, ROI evidence and scalable distribution | Planned |
+| Phase 3 | Production multi-tenancy, onboarding, authentication, billing and operations | Implemented; provider validation pending |
+| Phase 4 | Vertical intelligence, bounded model assistance and booking | Implemented; model/calendar validation pending |
+| Phase 5 | Revenue attribution, ROI evidence and scalable distribution | Implemented; live economics pending |
 
-**Three implementation phases remain.**
+**Zero repository implementation phases remain.**
 
-## Execution order
+## Final architecture sequence
 
 ```text
-Phase 3 — secure production SaaS foundation
-  ↓
-Phase 4 — add versioned intelligence and conflict-safe booking
-  ↓
-Phase 5 — prove value and enable controlled distribution
+Evidence validation
+  → reliable callback recovery
+  → controlled multi-business pilot
+  → production tenant and commercial controls
+  → versioned intelligence and conflict-safe booking
+  → attribution evidence and controlled distribution
 ```
 
-The order is structural:
-
-- Phase 4 requires the stable tenant, entitlement and audit model created in Phase 3.
-- Phase 5 requires the stable lead, conversation and booking identities created in Phase 4.
-- Skipping ahead would create temporary IDs, duplicate migrations, unsafe partner access and unreliable attribution.
-
-## Phase plans
+## Completion records
 
 - [Autonomous Build Contract](AUTONOMOUS-BUILD-CONTRACT.md)
-- [Phase 3 Implementation Plan](../phase3/IMPLEMENTATION-PLAN.md)
-- [Phase 4 Implementation Plan](../phase4/IMPLEMENTATION-PLAN.md)
-- [Phase 5 Implementation Plan](../phase5/IMPLEMENTATION-PLAN.md)
+- [Build Completion](BUILD-COMPLETION.md)
+- [Phase 3 Implementation](../phase3/README.md)
+- [Phase 4 Implementation](../phase4/README.md)
+- [Phase 5 Implementation](../phase5/README.md)
 
-## Meaning of `build`
+## What remains outside the implementation roadmap
 
-When the user says **`build`**, the expected execution is:
-
-1. Verify remote `main` and these plans.
-2. Implement Phase 3 on its own branch.
-3. Run all required tests and repair failures.
-4. Open a PR, confirm mergeability, squash-merge, and verify the Phase 3 files on `main`.
-5. Repeat independently for Phase 4.
-6. Repeat independently for Phase 5.
-7. Run and report the final repository validation.
-
-No ordinary approval pause is required between phases.
-
-## Required proof after every phase
-
-A phase is not complete until the response confirms:
-
-- branch;
-- PR number/link;
-- squash merge;
-- merge commit SHA;
-- tests and result;
-- defining files verified on remote `main`;
-- features intentionally disabled without external credentials;
-- live validation still outstanding.
-
-## Product state after Phase 5
-
-The planned implementation will be complete, but production proof may still require:
-
-- applying migrations to a real Supabase project;
-- configuring real Twilio, billing, model, calendar or CRM credentials;
-- provider verification/certification;
+- applying migrations to real environments;
+- configuring Auth, Twilio, billing, model, calendar, CRM and payout credentials;
+- provider verification and least-privilege approval;
 - supervised real traffic;
-- security and privacy review;
-- jurisdiction-specific telecom and consent review;
-- real customer retention and recovered-profit evidence.
+- security, privacy and jurisdiction-specific review;
+- real caller trust, retention and recovered-profit evidence;
+- a data-supported `SCALE`, `REVISE` or `STOP` decision.
 
-The autonomous implementation must never describe code-complete work as live-proven when those steps have not occurred.
+These are activation and business-proof gates, not missing repository phases.
