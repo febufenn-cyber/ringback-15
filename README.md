@@ -26,6 +26,24 @@ The system remains inactive by default:
 PILOT_GLOBAL_ACTIVE=false
 ```
 
+## Remaining implementation roadmap
+
+Three phases remain:
+
+- **Phase 3:** production multi-tenancy, onboarding, authentication, billing and operational tooling;
+- **Phase 4:** versioned vertical intelligence and conflict-safe booking integrations;
+- **Phase 5:** revenue attribution, ROI evidence and scalable distribution.
+
+The detailed plans and autonomous execution rules are stored in:
+
+- [`docs/REMAINING-PHASES-ROADMAP.md`](docs/REMAINING-PHASES-ROADMAP.md)
+- [`docs/AUTONOMOUS-BUILD-CONTRACT.md`](docs/AUTONOMOUS-BUILD-CONTRACT.md)
+- [`phase3/IMPLEMENTATION-PLAN.md`](phase3/IMPLEMENTATION-PLAN.md)
+- [`phase4/IMPLEMENTATION-PLAN.md`](phase4/IMPLEMENTATION-PLAN.md)
+- [`phase5/IMPLEMENTATION-PLAN.md`](phase5/IMPLEMENTATION-PLAN.md)
+
+Under the build contract, the command **`build`** means: implement every remaining incomplete phase in order, validate it, open a PR, squash-merge it into `main`, verify the remote merge commit and defining files, then continue to the next phase.
+
 ## Local validation
 
 ```bash
