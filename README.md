@@ -1,24 +1,27 @@
 # Ringback
 
-> When a business misses a call, Ringback safely calls the person back, captures their need, and sends the owner a measurable lead.
+> When a business misses a call, Ringback safely calls the person back, captures their need, and connects the result to defensible business evidence.
 
-## Current phase
+## Roadmap status
 
-Ringback now contains the **Phase 4 vertical-intelligence and conflict-safe booking layer**.
+The planned repository implementation roadmap from **Phase 0 through Phase 5 is complete**.
 
-The repository includes production tenant controls from Phase 3 plus immutable playbook versions, deterministic workflow graphs, bounded model classification, multilingual prompt packs, safety handoff rules, booking resources, expiring holds, and idempotent provider confirmation.
+Ringback now includes:
 
-Start with [`phase4/README.md`](phase4/README.md). Earlier commercial, pilot, and callback documentation remains in [`phase3/README.md`](phase3/README.md), [`phase2/README.md`](phase2/README.md), [`phase1/README.md`](phase1/README.md), and [`phase0/README.md`](phase0/README.md).
+- evidence-before-automation market validation;
+- duplicate-safe missed-call recovery;
+- controlled multi-business pilot operations;
+- production tenant, onboarding, entitlement and billing foundations;
+- immutable vertical playbooks, bounded model assistance and conflict-safe booking;
+- append-only attribution evidence, honest ROI reporting, CRM outbox integration and controlled partner distribution.
 
-Model and calendar providers remain disabled until credentials, permissions, safety review, and supervised tests are complete.
+Start with [`phase5/README.md`](phase5/README.md) and [`docs/BUILD-COMPLETION.md`](docs/BUILD-COMPLETION.md). Earlier phase records remain under `phase0/` through `phase4/`.
 
-## Remaining implementation roadmap
+## Implementation versus production proof
 
-One implementation phase remains:
+No external provider is activated merely because code is merged. Live production still requires migrations, verified credentials, provider approvals, supervised traffic, security/privacy review, jurisdictional compliance and real customer evidence.
 
-- **Phase 5:** defensible revenue attribution, ROI evidence, partner controls, and scalable distribution.
-
-See [`phase5/IMPLEMENTATION-PLAN.md`](phase5/IMPLEMENTATION-PLAN.md) and [`docs/AUTONOMOUS-BUILD-CONTRACT.md`](docs/AUTONOMOUS-BUILD-CONTRACT.md).
+The current scale decision is **HOLD**, not `SCALE`, until live economics and trust gates are satisfied.
 
 ## Local validation
 
@@ -31,38 +34,41 @@ npm run build
 
 ## Product status
 
-- [x] reliable missed-call recovery core
-- [x] controlled multi-business pilot
-- [x] production tenant and commercial foundation
-- [x] versioned vertical playbooks
-- [x] bounded model assistance and safety gates
-- [x] multilingual prompt packs
-- [x] conflict-safe booking holds and idempotent confirmation
-- [ ] live model and calendar-provider validation
-- [ ] defensible attribution and scalable distribution
+- [x] Phase 0 validation system
+- [x] Phase 1 reliable callback loop
+- [x] Phase 2 closed multi-business pilot controls
+- [x] Phase 3 production multi-tenancy and commercial foundation
+- [x] Phase 4 vertical intelligence and booking foundation
+- [x] Phase 5 attribution and controlled distribution foundation
+- [ ] live provider configuration and migrations
+- [ ] supervised production validation
+- [ ] verified retention and unit economics
+- [ ] evidence-supported scale decision
 
-## Architecture
+## Final architecture
 
 ```text
-Reliable callback + tenant foundation
+Signed provider evidence
         ↓
-Approved immutable playbook snapshot
+Reliable callback and tenant-scoped operations
         ↓
-Deterministic node and safety execution
+Approved playbook and safety execution
         ↓
-Bounded classification or human handoff
+Conflict-safe booking and CRM synchronization
         ↓
-Atomic booking hold
+Append-only attribution evidence
         ↓
-Idempotent provider confirmation
+Confidence-labelled ROI and partner accounting
 ```
 
-## Phased plan
+## Phase records
 
-- **Phase 0–2:** validation and controlled callback pilot — implemented.
-- **Phase 3:** production multi-tenancy and commercial foundation — implemented.
-- **Phase 4:** vertical intelligence and booking — implemented; provider validation pending.
-- **Phase 5:** revenue attribution and scalable distribution.
+- [`phase0/README.md`](phase0/README.md)
+- [`phase1/README.md`](phase1/README.md)
+- [`phase2/README.md`](phase2/README.md)
+- [`phase3/README.md`](phase3/README.md)
+- [`phase4/README.md`](phase4/README.md)
+- [`phase5/README.md`](phase5/README.md)
 
 ---
 
